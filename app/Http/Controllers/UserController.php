@@ -33,11 +33,35 @@ class UserController extends Controller
             'msg'=>'Verifique los datos ingresados'
         ],400);
     }
-    // Ya con eso replicas para lo demás como? Si, solo sería tipo esto
-    public function register (Request $r) {
-        //$r->all()['nombrekey']
-        $user = User::create([
-            'parametroDeBaseDeDatos'=>'valor'
-        ]); //colocas a penas abras una terminal lo del alias sail='' para que reconozca el comando, vaya con su bdd
+    public function register(Request $request)
+{
+    $validate = Validator::make($request->all(), [
+        'name' => 'required|string|max:255',
+        'email' => 'required|email|unique:users',
+        'password' => 'required|min:8'
+    ]);
+
+    if ($validate->fails()) {
+        return response()->json([
+            'data' => $validate->errors(),
+            'title' => 'Error de validación'
+        ], 422);
     }
+
+    $user = User::create([
+        'name' => $request->name,
+        'email' => $request->email,
+        'password' => Hash::make($request->password)
+    ]);
+
+    
+    Auth::login($user);
+
+    return response()->json([
+        'token' => $user->createToken('auth_token')->plainTextToken,
+        'token_type' => 'Bearer',
+        'title' => 'Registro exitoso',
+        'msg' => 'Usuario registrado correctamente'
+    ], 201);
+}
 }
